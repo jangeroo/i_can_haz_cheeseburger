@@ -9,9 +9,13 @@ var MAX_ENEMIES = 3;
 var PLAYER_WIDTH = 75;
 var PLAYER_HEIGHT = 54;
 
+var MISSILE_WIDTH = 75;
+var MISSILE_HEIGHT = 54;
+
 // These two constants keep us from using "magic numbers" in our code
 var LEFT_ARROW_CODE = 37;
 var RIGHT_ARROW_CODE = 39;
+var UP_ARROW_CODE = 38;
 
 // These two constants allow us to DRY
 var MOVE_LEFT = 'left';
@@ -19,7 +23,7 @@ var MOVE_RIGHT = 'right';
 
 // Preload game images
 var images = {};
-['enemy.png', 'stars.png', 'player.png'].forEach(imgName => {
+['enemy.png', 'stars.png', 'player.png', 'missile.png','skull.png'].forEach(imgName => {
     var img = document.createElement('img');
     img.src = 'images/' + imgName;
     images[imgName] = img;
@@ -58,6 +62,7 @@ class Player extends Entity {
         this.x = 2 * PLAYER_WIDTH;
         this.y = GAME_HEIGHT - PLAYER_HEIGHT - 10;
         this.sprite = images['player.png'];
+        this.missiles = [];
     }
 
     // This method is called by the game engine when left/right arrows are pressed
@@ -69,6 +74,36 @@ class Player extends Entity {
             this.x = this.x + PLAYER_WIDTH;
         }
     }
+
+    fire_ze_missiles() {
+        this.missiles.push(new Missile(this.x))
+        console.log(this.missiles)
+        this.missiles.forEach(l => console.log(l.x))
+    }
+}
+
+class Missile extends Entity {
+    constructor(xPos) {
+        super();
+        this.x = xPos;
+        this.y = GAME_HEIGHT - PLAYER_HEIGHT - 10;
+        this.sprite = images['missile.png'];
+        this.speed = 0.5
+        this.targetPos = this.x / ENEMY_WIDTH
+    }
+
+    update(timeDiff) {
+        this.y = this.y - timeDiff * this.speed;
+    }
+
+    destroyed_the_target(targets) {
+        var target = targets[this.targetPos]
+        if (target && this.y + MISSILE_HEIGHT/2 <= target.y + ENEMY_HEIGHT) {
+            delete targets[this.targetPos]
+            return true
+        }
+    }
+
 }
 
 
@@ -98,6 +133,14 @@ class Engine {
 
         // Since gameLoop will be called out of context, bind it once here.
         this.gameLoop = this.gameLoop.bind(this);
+        this.drawEverything = this.drawEverything.bind(this)
+    }
+
+    drawEverything() {
+        this.ctx.drawImage(images['stars.png'], 0, 0); // draw the star bg
+        this.enemies.forEach(enemy => enemy.render(this.ctx)); // draw the enemies
+        this.player.missiles.forEach(missile => missile.render(this.ctx));
+        this.player.render(this.ctx); // draw the player
     }
 
     /*
@@ -140,6 +183,9 @@ class Engine {
             else if (e.keyCode === RIGHT_ARROW_CODE) {
                 this.player.move(MOVE_RIGHT);
             }
+            else if (e.keyCode === UP_ARROW_CODE) {
+                this.player.fire_ze_missiles()
+            }
         });
 
         this.gameLoop();
@@ -166,10 +212,18 @@ class Engine {
         // Call update on all enemies
         this.enemies.forEach(enemy => enemy.update(timeDiff));
 
+        // Call update on all enemies
+        this.player.missiles.forEach(missile => missile.update(timeDiff));
+
+        // Check if any missiles have made contact
+        this.player.missiles.forEach((missile, missileIdx) => {
+            if (missile.destroyed_the_target(this.enemies)) {
+                delete this.player.missiles[missileIdx]
+            }
+        })
+
         // Draw everything!
-        this.ctx.drawImage(images['stars.png'], 0, 0); // draw the star bg
-        this.enemies.forEach(enemy => enemy.render(this.ctx)); // draw the enemies
-        this.player.render(this.ctx); // draw the player
+        this.drawEverything()
 
         // Check if any enemies should die
         this.enemies.forEach((enemy, enemyIdx) => {
@@ -179,9 +233,23 @@ class Engine {
         });
         this.setupEnemies();
 
+        //Check if any missiles should die
+        this.player.missiles.forEach((missile, missileIdx) => {
+            if (missile.y < 0 - MISSILE_HEIGHT) {
+                delete this.player.missiles[missileIdx];
+            }
+        })
+
         // Check if player is dead
         if (this.isPlayerDead()) {
             // If they are dead, then it's game over!
+            this.player.sprite = images['skull.png'];
+            // this.player.x = 0
+            // this.player.y = 0
+            // this.ctx.drawImage(images['stars.png'], 0, 0); // draw the star bg
+            // this.enemies.forEach(enemy => enemy.render(this.ctx)); // draw the enemies
+            // this.player.render(this.ctx); // draw the player
+            this.drawEverything()
             this.ctx.font = 'bold 30px Impact';
             this.ctx.fillStyle = '#ffffff';
             this.ctx.fillText(this.score + ' GAME OVER', 5, 30);
