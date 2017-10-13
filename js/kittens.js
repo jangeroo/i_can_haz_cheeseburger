@@ -1,6 +1,7 @@
 // This sectin contains some game constants. It is not super interesting
 var GAME_WIDTH = 375;
 var GAME_HEIGHT = 500;
+var COLUMN_WIDTH = 75
 
 var ENEMY_WIDTH = 75;
 var ENEMY_HEIGHT = 156;
@@ -11,6 +12,7 @@ var PLAYER_HEIGHT = 54;
 
 var AMMO_WIDTH = 75
 var AMMO_HEIGHT = 40
+var MAX_AMMO = 1
 
 var MISSILE_WIDTH = 75;
 var MISSILE_HEIGHT = 54;
@@ -84,10 +86,9 @@ class Player extends Entity {
     collect_ammo(dropped_ammo) {
         dropped_ammo.forEach((ammo, ammoIdx) => {
             if (this.x == ammo.x && this.y <= ammo.y + AMMO_HEIGHT) {
-                console.log('adding ' + ammo.rounds + ' to stash of ' + this.ammo)
                 this.ammo += ammo.rounds
+                console.log('LOG: collected ' + ammo.rounds + ' rounds. Ammo now: ' + this.ammo)
                 delete dropped_ammo[ammoIdx]
-                console.log('ammo stash is now ' + this.ammo)
             }
         })
     }
@@ -152,8 +153,8 @@ class Engine {
         this.player = new Player();
 
         // Setup enemies, making sure there are always three
-        this.setupEnemies();
-        this.setup_dropped_ammo()
+        this.setup_falling_things(Enemy, 'enemies', MAX_ENEMIES);
+        this.setup_falling_things(Ammo, 'dropped_ammo', MAX_AMMO);
 
         // Setup the <canvas> element where we will be drawing
         var canvas = document.createElement('canvas');
@@ -182,52 +183,28 @@ class Engine {
 
     /*
      The game allows for 5 horizontal slots where an enemy can be present.
-     At any point in time there can be at most MAX_ENEMIES enemies otherwise the game would be impossible
+     At any point in time there can be at most max_of_type entities otherwise the game would be impossible
      */
-    setupEnemies() {
-        if (!this.enemies) {
-            this.enemies = [];
+    setup_falling_things(entity_type, entity_array, max_of_type) {
+        if (!this[entity_array]) {
+            this[entity_array] = [];
         }
 
-        while (this.enemies.filter(e => !!e).length < MAX_ENEMIES) {
-            this.addEnemy();
-        }
-    }
-
-    // This method finds a random spot where there is no enemy, and puts one in there
-    addEnemy() {
-        var enemySpots = GAME_WIDTH / ENEMY_WIDTH;
-
-        var enemySpot;
-        // Keep looping until we find a free enemy spot at random
-        while (this.enemies[enemySpot]) {
-            enemySpot = Math.floor(Math.random() * enemySpots);
-        }
-
-        this.enemies[enemySpot] = new Enemy(enemySpot * ENEMY_WIDTH);
-    }
-
-    setup_dropped_ammo() {
-        if (!this.dropped_ammo) {
-            this.dropped_ammo = [];
-        }
-
-        while (this.dropped_ammo.filter(a => !!a).length < MAX_ENEMIES) {
-            this.addAmmo();
+        while (this[entity_array].filter(a => !!a).length < max_of_type) {
+            this.add_falling_thing(entity_type, this[entity_array]);
         }
     }
 
-    // This method finds a random spot where there is no ammo, and puts one in there
-    addAmmo() {
-        var ammoSpots = GAME_WIDTH / AMMO_WIDTH;
-
-        var ammoSpot;
-        // Keep looping until we find a free enemy spot at random
-        while (this.dropped_ammo[ammoSpot]) {
-            ammoSpot = Math.floor(Math.random() * ammoSpots);
+    // This method finds a random spot in the array of entities where there is no entity, and puts one in there
+    add_falling_thing(entity_type, entity_array) {
+        var spots = GAME_WIDTH / COLUMN_WIDTH;
+        var spot;
+        // Keep looping until we find a free spot at random
+        while (entity_array[spot]) {
+            spot = Math.floor(Math.random() * spots);
         }
-
-        this.dropped_ammo[ammoSpot] = new Ammo(ammoSpot * AMMO_WIDTH);
+        // Add new entity at the selected spot in the array
+        entity_array[spot] = new entity_type(spot * COLUMN_WIDTH);
     }
 
     // This method kicks off the game
@@ -296,7 +273,7 @@ class Engine {
                 delete this.enemies[enemyIdx];
             }
         });
-        this.setupEnemies();
+        this.setup_falling_things(Enemy, 'enemies', MAX_ENEMIES);
 
         // Check if any ammo should die
         this.dropped_ammo.forEach((ammo, ammoIdx) => {
@@ -304,7 +281,7 @@ class Engine {
                 delete this.dropped_ammo[ammoIdx];
             }
         });
-        this.setup_dropped_ammo();
+        this.setup_falling_things(Ammo, 'dropped_ammo', MAX_AMMO);
 
         //Check if any missiles should die
         this.player.missiles.forEach((missile, missileIdx) => {
@@ -336,7 +313,7 @@ class Engine {
 
     isPlayerDead() {
         return this.enemies.some(enemy => (
-            this.player.x == enemy.x && this.player.y <= (enemy.y + ENEMY_HEIGHT)
+            this.player.x == enemy.x && this.player.y <= (enemy.y + ENEMY_HEIGHT) && this.player.y > (enemy.y + ENEMY_HEIGHT/2)
         ))
     }
 }
