@@ -67,6 +67,7 @@ class Player extends Entity {
         this.x = 2 * PLAYER_WIDTH;
         this.y = GAME_HEIGHT - PLAYER_HEIGHT - 10;
         this.sprite = images['player.png'];
+        this.ammo = 0
         this.missiles = [];
     }
 
@@ -80,10 +81,22 @@ class Player extends Entity {
         }
     }
 
+    collect_ammo(dropped_ammo) {
+        dropped_ammo.forEach((ammo, ammoIdx) => {
+            if (this.x == ammo.x && this.y <= ammo.y + AMMO_HEIGHT) {
+                console.log('adding ' + ammo.rounds + ' to stash of ' + this.ammo)
+                this.ammo += ammo.rounds
+                delete dropped_ammo[ammoIdx]
+                console.log('ammo stash is now ' + this.ammo)
+            }
+        })
+    }
+
     fire_ze_missiles() {
-        this.missiles.push(new Missile(this.x))
-        console.log(this.missiles)
-        this.missiles.forEach(l => console.log(l.x))
+        if (this.ammo > 0) {
+            this.missiles.push(new Missile(this.x))
+            this.ammo -= 1
+        }
     }
 }
 
@@ -96,6 +109,8 @@ class Ammo extends FallingThing {
 
         // Each enemy should have a different speed
         this.speed = Math.random() / 2 + 0.25;
+
+        this.rounds = 1
     }
 }
 
@@ -270,6 +285,8 @@ class Engine {
             }
         })
 
+        this.player.collect_ammo(this.dropped_ammo)
+
         // Draw everything!
         this.drawEverything()
 
@@ -300,11 +317,6 @@ class Engine {
         if (this.isPlayerDead()) {
             // If they are dead, then it's game over!
             this.player.sprite = images['skull.png'];
-            // this.player.x = 0
-            // this.player.y = 0
-            // this.ctx.drawImage(images['stars.png'], 0, 0); // draw the star bg
-            // this.enemies.forEach(enemy => enemy.render(this.ctx)); // draw the enemies
-            // this.player.render(this.ctx); // draw the player
             this.drawEverything()
             this.ctx.font = 'bold 30px Impact';
             this.ctx.fillStyle = '#ffffff';
