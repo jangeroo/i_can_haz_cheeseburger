@@ -9,6 +9,9 @@ var MAX_ENEMIES = 3;
 var PLAYER_WIDTH = 75;
 var PLAYER_HEIGHT = 54;
 
+var AMMO_WIDTH = 75
+var AMMO_HEIGHT = 40
+
 var MISSILE_WIDTH = 75;
 var MISSILE_HEIGHT = 54;
 
@@ -23,7 +26,7 @@ var MOVE_RIGHT = 'right';
 
 // Preload game images
 var images = {};
-['enemy.png', 'stars.png', 'player.png', 'missile.png','skull.png'].forEach(imgName => {
+['enemy.png', 'stars.png', 'player.png', 'ammo.png', 'missile.png','skull.png'].forEach(imgName => {
     var img = document.createElement('img');
     img.src = 'images/' + imgName;
     images[imgName] = img;
@@ -40,7 +43,13 @@ class Entity {
     }
 }
 
-class Enemy extends Entity {
+class FallingThing extends Entity {
+    update(timeDiff) {
+        this.y = this.y + timeDiff * this.speed;
+    }
+}
+
+class Enemy extends FallingThing {
     constructor(xPos) {
         super();
         this.x = xPos;
@@ -49,10 +58,6 @@ class Enemy extends Entity {
 
         // Each enemy should have a different speed
         this.speed = Math.random() / 2 + 0.25;
-    }
-
-    update(timeDiff) {
-        this.y = this.y + timeDiff * this.speed;
     }
 }
 
@@ -82,6 +87,18 @@ class Player extends Entity {
     }
 }
 
+class Ammo extends FallingThing {
+    constructor(xPos) {
+        super();
+        this.x = xPos
+        this.y = -AMMO_HEIGHT
+        this.sprite = images['ammo.png']
+
+        // Each enemy should have a different speed
+        this.speed = Math.random() / 2 + 0.25;
+    }
+}
+
 class Missile extends Entity {
     constructor(xPos) {
         super();
@@ -103,7 +120,6 @@ class Missile extends Entity {
             return true
         }
     }
-
 }
 
 
@@ -122,6 +138,7 @@ class Engine {
 
         // Setup enemies, making sure there are always three
         this.setupEnemies();
+        this.setup_dropped_ammo()
 
         // Setup the <canvas> element where we will be drawing
         var canvas = document.createElement('canvas');
@@ -138,8 +155,13 @@ class Engine {
 
     drawEverything() {
         this.ctx.drawImage(images['stars.png'], 0, 0); // draw the star bg
-        this.enemies.forEach(enemy => enemy.render(this.ctx)); // draw the enemies
-        this.player.missiles.forEach(missile => missile.render(this.ctx));
+        [ // array of entity arrays
+            this.enemies,
+            this.dropped_ammo,
+            this.player.missiles
+        ].forEach(entity_type => {
+            entity_type.forEach(entity => entity.render(this.ctx))
+        })
         this.player.render(this.ctx); // draw the player
     }
 
@@ -168,6 +190,29 @@ class Engine {
         }
 
         this.enemies[enemySpot] = new Enemy(enemySpot * ENEMY_WIDTH);
+    }
+
+    setup_dropped_ammo() {
+        if (!this.dropped_ammo) {
+            this.dropped_ammo = [];
+        }
+
+        while (this.dropped_ammo.filter(a => !!a).length < MAX_ENEMIES) {
+            this.addAmmo();
+        }
+    }
+
+    // This method finds a random spot where there is no ammo, and puts one in there
+    addAmmo() {
+        var ammoSpots = GAME_WIDTH / AMMO_WIDTH;
+
+        var ammoSpot;
+        // Keep looping until we find a free enemy spot at random
+        while (this.dropped_ammo[ammoSpot]) {
+            ammoSpot = Math.floor(Math.random() * ammoSpots);
+        }
+
+        this.dropped_ammo[ammoSpot] = new Ammo(ammoSpot * AMMO_WIDTH);
     }
 
     // This method kicks off the game
@@ -209,11 +254,14 @@ class Engine {
         // Increase the score!
         this.score += timeDiff;
 
-        // Call update on all enemies
-        this.enemies.forEach(enemy => enemy.update(timeDiff));
-
-        // Call update on all enemies
-        this.player.missiles.forEach(missile => missile.update(timeDiff));
+        // Call update on all of the entities
+        [ // array of entity arrays
+            this.enemies,
+            this.dropped_ammo,
+            this.player.missiles
+        ].forEach(entity_type => {
+            entity_type.forEach(entity => entity.update(timeDiff))
+        })
 
         // Check if any missiles have made contact
         this.player.missiles.forEach((missile, missileIdx) => {
@@ -232,6 +280,14 @@ class Engine {
             }
         });
         this.setupEnemies();
+
+        // Check if any ammo should die
+        this.dropped_ammo.forEach((ammo, ammoIdx) => {
+            if (ammo.y > GAME_HEIGHT) {
+                delete this.dropped_ammo[ammoIdx];
+            }
+        });
+        this.setup_dropped_ammo();
 
         //Check if any missiles should die
         this.player.missiles.forEach((missile, missileIdx) => {
