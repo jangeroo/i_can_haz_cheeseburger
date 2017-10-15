@@ -98,7 +98,7 @@ class Player extends Entity {
 
     collect_ammo(dropped_ammo) {
         dropped_ammo.forEach((ammo, ammoIdx) => {
-            if (this.x == ammo.x && this.y <= ammo.y + AMMO_HEIGHT) {
+            if (this.x == ammo.x && this.y > ammo.y && this.y <= ammo.y + AMMO_HEIGHT) {
                 this.ammo += ammo.rounds
                 console.log('LOG: collected ' + ammo.rounds + ' rounds. Ammo now: ' + this.ammo)
                 delete dropped_ammo[ammoIdx]
