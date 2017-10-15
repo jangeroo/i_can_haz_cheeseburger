@@ -1,15 +1,18 @@
 // This sectin contains some game constants. It is not super interesting
 var GAME_WIDTH = 375;
-var GAME_HEIGHT = 500;
-var COLUMN_WIDTH = 75
+var GAME_HEIGHT = 900;
+var COLUMN_WIDTH = 75;
+var FOOTER_HEIGHT = 40 + 10;
+
+var FONT_SIZE = 30;
 
 var ENEMY_WIDTH = 75;
 var ENEMY_HEIGHT = 156;
-var MAX_ENEMIES = 3;
+var MAX_ENEMIES = 5;
 
 var PLAYER_WIDTH = 75;
 var PLAYER_HEIGHT = 54;
-var PLAYER_STARTING_HEIGHT = GAME_HEIGHT - PLAYER_HEIGHT - 10;
+var PLAYER_STARTING_HEIGHT = GAME_HEIGHT - FOOTER_HEIGHT - 10 - PLAYER_HEIGHT;
 var PLAYER_MAX_HEIGHT = PLAYER_HEIGHT * 2;
 
 var AMMO_WIDTH = 75
@@ -34,7 +37,11 @@ var MOVE_DOWN = 'down';
 
 // Preload game images
 var images = {};
-['enemy.png', 'stars.png', 'player.png', 'ammo.png', 'missile.png','skull.png'].forEach(imgName => {
+[
+    'stars.png',
+    'enemy.png', 'player.png', 'skull.png',
+    'ammo.png', 'ammo_stash.png', 'missile.png',
+].forEach(imgName => {
     var img = document.createElement('img');
     img.src = 'images/' + imgName;
     images[imgName] = img;
@@ -199,6 +206,14 @@ class Engine {
             entity_type.forEach(entity => entity.render(this.ctx))
         })
         this.player.render(this.ctx); // draw the player
+
+        this.ctx.fontSize = FONT_SIZE;
+        this.ctx.font = 'bold ' + this.ctx.fontSize + 'px Impact';
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.fillText(Math.floor(this.score/100), 5, FONT_SIZE);
+        this.ctx.drawImage(images['ammo_stash.png'], 5, GAME_HEIGHT - FOOTER_HEIGHT)
+        this.ctx.fillText(this.player.ammo, 5 + 40, GAME_HEIGHT - 10)
+
     }
 
     /*
@@ -317,21 +332,16 @@ class Engine {
             }
         })
 
+                
         // Check if player is dead
         if (this.isPlayerDead()) {
             // If they are dead, then it's game over!
             this.player.sprite = images['skull.png'];
             this.drawEverything()
-            this.ctx.font = 'bold 30px Impact';
-            this.ctx.fillStyle = '#ffffff';
-            this.ctx.fillText(this.score + ' GAME OVER', 5, 30);
+            var game_over_text = 'GAME OVER'
+            this.ctx.fillText(game_over_text, GAME_WIDTH/2 - this.ctx.measureText(game_over_text).width/2, FONT_SIZE)
         }
         else {
-            // If player is not dead, then draw the score
-            this.ctx.font = 'bold 30px Impact';
-            this.ctx.fillStyle = '#ffffff';
-            this.ctx.fillText(this.score, 5, 30);
-
             // Set the time marker and redraw
             this.lastFrame = Date.now();
             requestAnimationFrame(this.gameLoop);
