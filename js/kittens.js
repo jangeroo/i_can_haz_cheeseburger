@@ -108,7 +108,7 @@ class Player extends Entity {
 
     fire_ze_missiles() {
         if (this.ammo > 0) {
-            this.missiles.push(new Missile(this.x))
+            this.missiles.push(new Missile(this.x, this.y))
             this.ammo -= 1
         }
     }
@@ -129,10 +129,10 @@ class Ammo extends FallingThing {
 }
 
 class Missile extends Entity {
-    constructor(xPos) {
+    constructor(xPos, yPos) {
         super();
         this.x = xPos;
-        this.y = GAME_HEIGHT - PLAYER_HEIGHT - 10;
+        this.y = yPos;
         this.sprite = images['missile.png'];
         this.speed = 0.5
         this.targetPos = this.x / ENEMY_WIDTH
