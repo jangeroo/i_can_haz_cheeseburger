@@ -9,6 +9,8 @@ var MAX_ENEMIES = 3;
 
 var PLAYER_WIDTH = 75;
 var PLAYER_HEIGHT = 54;
+var PLAYER_STARTING_HEIGHT = GAME_HEIGHT - PLAYER_HEIGHT - 10;
+var PLAYER_MAX_HEIGHT = PLAYER_HEIGHT * 2;
 
 var AMMO_WIDTH = 75
 var AMMO_HEIGHT = 40
@@ -21,10 +23,14 @@ var MISSILE_HEIGHT = 54;
 var LEFT_ARROW_CODE = 37;
 var RIGHT_ARROW_CODE = 39;
 var UP_ARROW_CODE = 38;
+var DOWN_ARROW_CODE = 40;
+var SPACE_BAR_CODE = 32;
 
 // These two constants allow us to DRY
 var MOVE_LEFT = 'left';
 var MOVE_RIGHT = 'right';
+var MOVE_UP = 'up';
+var MOVE_DOWN = 'down';
 
 // Preload game images
 var images = {};
@@ -67,7 +73,7 @@ class Player extends Entity {
     constructor() {
         super();
         this.x = 2 * PLAYER_WIDTH;
-        this.y = GAME_HEIGHT - PLAYER_HEIGHT - 10;
+        this.y = PLAYER_STARTING_HEIGHT;
         this.sprite = images['player.png'];
         this.ammo = 0
         this.missiles = [];
@@ -81,6 +87,13 @@ class Player extends Entity {
         else if (direction === MOVE_RIGHT && this.x < GAME_WIDTH - PLAYER_WIDTH) {
             this.x = this.x + PLAYER_WIDTH;
         }
+        else if (direction === MOVE_UP && this.y > PLAYER_MAX_HEIGHT) {
+            this.y = this.y - PLAYER_HEIGHT;
+        }
+        else if (direction === MOVE_DOWN && this.y < PLAYER_STARTING_HEIGHT) {
+            this.y = this.y + PLAYER_HEIGHT;
+        }
+        console.log('--> player now at (' + this.x + ', ' + this.y + ')')
     }
 
     collect_ammo(dropped_ammo) {
@@ -221,6 +234,12 @@ class Engine {
                 this.player.move(MOVE_RIGHT);
             }
             else if (e.keyCode === UP_ARROW_CODE) {
+                this.player.move(MOVE_UP);
+            }
+            else if (e.keyCode === DOWN_ARROW_CODE) {
+                this.player.move(MOVE_DOWN);
+            }
+            else if (e.keyCode === SPACE_BAR_CODE) {
                 this.player.fire_ze_missiles()
             }
         });
