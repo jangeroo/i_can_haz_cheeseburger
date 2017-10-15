@@ -75,6 +75,7 @@ class Player extends Entity {
         this.x = 2 * PLAYER_WIDTH;
         this.y = PLAYER_STARTING_HEIGHT;
         this.sprite = images['player.png'];
+        this.speed = 0.1
         this.ammo = 0
         this.missiles = [];
     }
@@ -94,6 +95,12 @@ class Player extends Entity {
             this.y = this.y + PLAYER_HEIGHT;
         }
         console.log('--> player now at (' + this.x + ', ' + this.y + ')')
+    }
+
+    update(timeDiff) {
+        if (this.y < PLAYER_STARTING_HEIGHT) {
+            this.y = this.y + timeDiff * this.speed
+        }
     }
 
     collect_ammo(dropped_ammo) {
@@ -273,6 +280,7 @@ class Engine {
         ].forEach(entity_type => {
             entity_type.forEach(entity => entity.update(timeDiff))
         })
+        this.player.update(timeDiff)
 
         // Check if any missiles have made contact
         this.player.missiles.forEach((missile, missileIdx) => {
